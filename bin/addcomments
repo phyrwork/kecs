@@ -1,0 +1,43 @@
+#!/bin/bash
+set -e
+
+db=kecs
+file=$1
+tbl=$2
+users="users"
+
+! addusers -n author $file $users && echo "error adding users" >&2 && exit 1
+
+spec=$(colspec -v created_utc -v parent_id -c score -v id -v author -v link_id $file)
+
+sql="\
+CREATE TEMPORARY TABLE IF NOT EXISTS raw (
+    id bigint(11) unsigned NOT NULL,
+    link bigint(11) unsigned NOT NULL,
+    parent bigint(11) unsigned NOT NULL,
+    created int(11) unsigned NOT NULL,
+    username char(20) NOT NULL,
+    score int(11) NOT NULL,
+    PRIMARY KEY (id),
+    KEY (username) USING BTREE
+) DEFAULT CHARSET=utf8mb4;
+
+LOAD DATA LOCAL INFILE '$file'
+IGNORE INTO TABLE raw
+FIELDS TERMINATED BY ',' ENCLOSED BY '\"' ESCAPED BY '\"'
+LINES TERMINATED BY '\\n'
+IGNORE 1 LINES
+($spec)
+SET
+    id = CONV(@id,36,10),
+    link = CONV(SUBSTRING(@link_id FROM 4),36,10),
+    parent = CONV(SUBSTRING(@parent_id FROM 4),36,10),
+    username = @author,
+    created = @created_utc;
+
+INSERT INTO $tbl(id,link,parent,user,created,score)
+SELECT r.id,r.link,r.parent,u.id,r.created,r.score
+FROM raw AS r INNER JOIN users AS u ON r.username = u.name;
+"
+
+mysql $db <<< $sql

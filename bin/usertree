@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+db=kecs
+name=$1
+
+sql="\
+WITH RECURSIVE descs(id, link, parent)
+AS (
+	SELECT id, link, parent
+	FROM posts
+	WHERE user IN (
+	    SELECT id FROM users WHERE name = '$name'
+	)
+	UNION ALL
+	SELECT p.id, p.link, p.parent
+	FROM posts AS p
+	INNER JOIN descs AS d
+      ON d.link = p.link AND d.parent = p.id
+)
+SELECT * FROM descs;
+"
+
+mysql $db <<< $sql
+

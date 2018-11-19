@@ -1,22 +1,36 @@
 #!/bin/bash
 set -e
 
+function rmecho {
+    rm "$1"
+    echo "deleted $1" >&2
+}
+
 db=kecs
+tbl="users"
 name="name"
 
 while [ $# -gt 0 ]; do
     case $1 in
+        -t) tbl=$2 && shift 2;;
         -n) name=$2 && shift 2;;
+        -D) del=1 && shift;;
         *)  break;;
     esac
 done
 
-file=$1
-tbl=$2
+if [ $# -gt 0 ]; then
+    files=$(mktemp -u)
+    printf '%s\n' $@ > $files
+    trap "rm $files" EXIT
+    exec 0< $files
+fi
 
-spec=$(colspec -v $name $file)
+while read file; do
 
-sql="\
+    spec=$(colspec -v $name $file)
+
+    sql="\
 LOAD DATA LOCAL INFILE '$file'
 IGNORE INTO TABLE $tbl
 FIELDS TERMINATED BY ',' ENCLOSED BY '\"' ESCAPED BY '\"'
@@ -27,4 +41,10 @@ SET
     name = @$name;
 "
 
-mysql $db <<< $sql
+    # import
+    echo "importing users from $file" >&2
+    mysql $db <<< $sql
+
+    # optionally delete imported files
+    [ -z $del ] || rmecho $file
+done

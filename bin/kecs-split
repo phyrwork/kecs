@@ -1,0 +1,39 @@
+#!/bin/bash
+set -e
+
+# split size
+[ $# -lt 1 ] && echo "error: split size not specified" >&2 && exit 1
+size=$1
+
+# set input
+# replace stdin with file if given
+# - to denote stdin
+if [ $# -gt 1 ] && [ $2 != "-" ]; then
+  exec 0< "$2"
+fi
+
+# set output location
+if [ $# -gt 2 ]; then
+  prefix=$3
+else
+  # default to a temp dir
+  prefix=$(mktemp -d)
+fi
+# fix prefix for files or dirs
+if [ -d $prefix ]; then
+  prefix="$prefix/"
+else
+  prefix="$prefix."
+fi
+
+# parallel out function
+out () {
+  # write to file
+  cat > "$1"
+  # output filename
+  echo "$1"
+}
+export -f out # export to parallel context
+
+# split!
+cat | parallel --line-buffer --header : --pipe -N "$size" out "$prefix{0000#}.csv"

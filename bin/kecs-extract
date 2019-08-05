@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+# output fields
+[ $# -lt 1 ] && echo "error: table not specified" >&2 && exit 2
+out=$(kecs-schema "$1" | tr '\n' ',')
+
+# set input
+# replace stdin with file if given
+[ $# -lt 2 ] || exec 0< "$2"
+
+# extract json fields to csv
+json2csv -k "$out" -p

@@ -10,7 +10,7 @@ AS (
 	SELECT id, link, parent
 	FROM posts
 	WHERE user IN (
-	    SELECT id FROM users WHERE name = '$name'
+	    SELECT id FROM users WHERE name = '$1'
 	)
 	UNION ALL
 	SELECT p.id, p.link, p.parent
@@ -18,8 +18,8 @@ AS (
 	INNER JOIN descs AS d
       ON d.link = p.link AND d.parent = p.id
 )
-SELECT * FROM descs;
+SELECT '$1' as user, * FROM descs;
 "
 
-mysql $db <<< $sql
+mysql $db -e "$sql"
 

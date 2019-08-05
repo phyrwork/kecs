@@ -1,6 +1,0 @@
-#!/bin/bash
-set -e
-
-while read name; do
-   $1 $name
-done < "${2:-/dev/stdin}"

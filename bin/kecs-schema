@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+READLINK=greadlink # TODO: make platform generic
+
+[ $# -lt 0 ] && echo "error: table not specified" && exit 1
+tbl=$1
+
+# TODO: allow pointing alternate tbl dirs
+schema="$(dirname "$($READLINK -f $0)")/../schema"
+file="$schema/$tbl"
+
+echo "$(tr '\n' ',' < "$file")"

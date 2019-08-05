@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+# set unarchiver
+[ $# -lt 1 ] && echo "error: archive format not specified" >&2 && exit 1
+case $1 in
+  xz) inflate="xzcat";;
+  bz2) inflate="pbzip2 -d -c";;
+esac
+
+# set input
+# replace stdin with file if given
+[ $# -lt 2 ] || exec 0< "$2"
+
+# decompress to stdout
+$inflate

@@ -1,0 +1,51 @@
+#!/bin/bash
+set -e
+
+# TODO: cli opts and env vars
+db=kecs
+tbl=posts
+users=users
+
+# set input
+# mysql/mariadb can take /dev/stdin as a filename for load data
+# if no files given, default to stdin - set positional args
+[ $# -lt 1 ] && set -- /dev/stdin
+
+for file in "$@"; do
+  # load stmt
+  spec=$(kecs-loadspec submissions "$file")
+  sql="\
+CREATE TEMPORARY TABLE IF NOT EXISTS raw (
+  id bigint(11) unsigned NOT NULL,
+  created int(11) unsigned NOT NULL,
+  username char(20) NOT NULL,
+  score int(11) NOT NULL,
+  PRIMARY KEY (id),
+  KEY (username) USING BTREE
+) DEFAULT CHARSET=utf8mb4;
+--
+LOAD DATA LOCAL INFILE '$file'
+INTO TABLE raw
+FIELDS TERMINATED BY ',' ENCLOSED BY '\"' ESCAPED BY '\"'
+LINES TERMINATED BY '\\n'
+IGNORE 1 LINES
+($spec)
+SET
+  id = CONV(@id,36,10),
+  created = @created_utc,
+  username = @author,
+  score = @score;
+--
+INSERT INTO users(name)
+SELECT DISTINCT username FROM raw
+ON DUPLICATE KEY UPDATE id=users.id,name=users.name;
+--
+INSERT INTO $tbl(id,link,parent,user,created,score)
+SELECT r.id,r.id,0,u.id,r.created,r.score
+FROM raw AS r LEFT JOIN $users AS u ON r.username = u.name
+ON DUPLICATE KEY UPDATE id=$tbl.id;
+"
+  # import
+  echo "importing submissions from $file" >&2
+  mysql "$db" -e "$sql"
+done

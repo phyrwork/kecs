@@ -36,13 +36,14 @@ SET
   username = @author,
   score = @score;
 --
-INSERT INTO users(name)
+INSERT INTO users(username)
 SELECT DISTINCT username FROM raw
-ON DUPLICATE KEY UPDATE id=users.id,name=users.name;
+ON DUPLICATE KEY UPDATE id=users.id,username=users.username;
 --
 INSERT INTO $tbl(id,link,parent,user,created,score)
 SELECT r.id,r.id,0,u.id,r.created,r.score
-FROM raw AS r LEFT JOIN $users AS u ON r.username = u.name
+FROM raw AS r
+INNER JOIN $users AS u ON r.username = u.username
 ON DUPLICATE KEY UPDATE id=$tbl.id;
 "
   # import

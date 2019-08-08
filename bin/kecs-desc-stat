@@ -10,7 +10,7 @@ AS (
   SELECT id, link, parent, score
   FROM posts
   WHERE user IN (
-    SELECT id FROM users WHERE name = '$1'
+    SELECT id FROM users WHERE username = '$1'
   )
   UNION ALL
   SELECT p.id, p.link, p.parent, p.score
@@ -18,7 +18,7 @@ AS (
   INNER JOIN descs AS d
     ON d.link = p.link AND d.parent = p.id
 )
-SELECT '$1' AS user, COUNT(*) AS count, SUM(d.score) AS score
+SELECT '$1' AS username, COUNT(*) AS count, SUM(d.score) AS score
 FROM descs AS d;
 "
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-READLINK=greadlink # TODO: make platform generic
+[ -z $READLINK ] && READLINK=readlink # TODO: make platform generic
 
 [ $# -lt 0 ] && echo "error: table not specified" && exit 1
 tbl=$1

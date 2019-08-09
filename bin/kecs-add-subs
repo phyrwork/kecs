@@ -36,17 +36,28 @@ SET
   username = @author,
   score = @score;
 --
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+--
 INSERT INTO users(username)
 SELECT DISTINCT username FROM raw
 ON DUPLICATE KEY UPDATE id=users.id,username=users.username;
 --
+START TRANSACTION;
 INSERT INTO $tbl(id,link,parent,user,created,score)
 SELECT r.id,r.id,0,u.id,r.created,r.score
 FROM raw AS r
 INNER JOIN $users AS u ON r.username = u.username
 ON DUPLICATE KEY UPDATE id=$tbl.id;
+COMMIT;
 "
   # import
-  echo "importing submissions from $file" >&2
-  mysql "$db" -e "$sql"
+  attempt=1
+  while true; do
+    echo "importing submissions from $file ($attempt)" >&2
+    mysql "$db" -e "$sql" && break
+    (( attempt += 1 ))
+    if [ $attempt -gt 3 ]; then
+      echo "error: attempt count exceeded" >&2 && exit 1
+    fi
+  done
 done

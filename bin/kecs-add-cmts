@@ -22,7 +22,7 @@ CREATE TEMPORARY TABLE IF NOT EXISTS raw (
   created int(11) unsigned NOT NULL,
   username char(20) NOT NULL,
   score int(11) NOT NULL,
-  PRIMARY KEY (id),
+  PRIMARY KEY (link, id),
   KEY (username) USING BTREE
 ) DEFAULT CHARSET=utf8mb4;
 --

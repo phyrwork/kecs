@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+tmp=$(mktemp -d)
+trap "rm -rf $tmp" EXIT
+
+while read file; do
+  tail -n +2 $file | sort -k1,2 > "$tmp/$(basename "$file")"
+done <<<"$@"
+
+sort -k1,2 -m $tmp/*

@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+srcs=$1
+y=$2
+m=$3
+
+tmp=$(mktemp -d)
+trap "rm -rf $tmp" EXIT
+
+while read url fmt kind y m; do
+  echo "fetching $url" >&2
+  wget -qO - "$url" | pv | kecs-fmt -z "$fmt" -e "$kind" > "$tmp/$kind.csv";
+done <<<"$(grep "$y $m" "$srcs")"
+
+kecs-sort $tmp/*

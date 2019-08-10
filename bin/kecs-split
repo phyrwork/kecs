@@ -36,4 +36,4 @@ out () {
 export -f out # export to parallel context
 
 # split!
-cat | parallel --line-buffer --header : --pipe -N "$size" out "$prefix{0000#}.csv"
+cat | parallel -j 1 --line-buffer --header : --pipe -N "$size" out "$prefix{0000#}.csv"

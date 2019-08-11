@@ -13,4 +13,7 @@ while read url fmt kind y m; do
   wget -qO - "$url" | pv | kecs-fmt -z "$fmt" -e "$kind" > "$tmp/$kind.csv";
 done <<<"$(grep "$y $m" "$srcs")"
 
-kecs-sort $tmp/*
+exec 0<<< "$(kecs-sort $tmp/*)"
+
+# TODO: figure out where the blank lines are coming from
+grep -v -e '^$'

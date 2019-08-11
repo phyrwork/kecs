@@ -3,11 +3,16 @@ set -e
 
 # output fields
 [ $# -lt 1 ] && echo "error: table not specified" >&2 && exit 2
-out=$(kecs-schema "$1" | tr '\n' ',')
+out=$(kecs-schema "$1" | tr ' ' ',')
 
 # set input
 # replace stdin with file if given
 [ $# -lt 2 ] || exec 0< "$2"
 
 # extract json fields to csv
-json2csv -k "$out" -p
+exec 0<<< "$(json2csv -k "$out")"
+
+# remove post id prefixes
+# removes post prefixes from first three columns (link_id, post_id, parent_id)
+# TODO: generate this dynamically
+perl -nle 'print "$3,$6,$9,$10,$11,$12" if /^((t3_|t1_)?(\w+))?,((t3_|t1_)?(\w+))?,((t3_|t1_)?(\w+))?,(\w+),(\w+),(\w+)$/'

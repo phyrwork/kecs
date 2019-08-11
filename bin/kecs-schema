@@ -10,4 +10,4 @@ tbl=$1
 schema="$(dirname "$($READLINK -f $0)")/../schema"
 file="$schema/$tbl"
 
-echo "$(tr '\n' ',' < "$file")"
+echo "$(tr '\n' ' ' < "$file")"

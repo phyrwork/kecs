@@ -26,14 +26,5 @@ else
   prefix="$prefix."
 fi
 
-# parallel out function
-out () {
-  # write to file
-  cat > "$1"
-  # output filename
-  echo "$1"
-}
-export -f out # export to parallel context
-
 # split!
-cat | parallel -j 1 --line-buffer : --pipe -N "$size" out "$prefix{0000#}.csv"
+split -a 4 -l "$size" - "$prefix"

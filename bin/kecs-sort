@@ -8,5 +8,5 @@ while read file; do
   tail -n +2 $file | sort -k1,2 > "$tmp/$(basename "$file")"
 done <<<"$@"
 
-exec 0<<< "$(sort -k1,2 -m $tmp/*)"
+exec 0< <(sort -k1,2 -m $tmp/*)
 grep -v "^==>"

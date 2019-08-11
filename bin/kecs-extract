@@ -10,7 +10,7 @@ out=$(kecs-schema "$1" | tr ' ' ',')
 [ $# -lt 2 ] || exec 0< "$2"
 
 # extract json fields to csv
-exec 0<<< "$(json2csv -k "$out")"
+exec 0< <(json2csv -k "$out")
 
 # remove post id prefixes
 # removes post prefixes from first three columns (link_id, post_id, parent_id)

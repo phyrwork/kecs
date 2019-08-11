@@ -1,13 +1,6 @@
 #!/bin/bash
 set -e
 
-# clean up on exit
-tmp=()
-rmexit () {
-  tmp+=($1)
-  trap "rm ${tmp[*]}" EXIT
-}
-
 # gather options
 while [ $# -gt 0 ]; do
   case $1 in
@@ -24,41 +17,12 @@ done
 # the unarchive utilities seem to be able to detect archive boundaries
 # if not given default to only stdin
 [ $# -lt 1 ] && set -- /dev/stdin
-in=$(mktemp -u)
-mkfifo "$in"
-rmexit "$in"
-cat $@ | tee "$in" > /dev/null &
-exec 0< "$in"
+exec 0< <(cat $@)
 
-# inflate
-if [ -n "$archive" ]; then
-  # TODO: figure out how to call rmexit() from a function that doesn't trigger EXIT
-  json=$(mktemp -u)
-  mkfifo "$json"
-  rmexit "$json"
-  kecs-inflate "$archive" | tee "$json" >/dev/null &
-  exec 0< "$json"
-fi
+[ -n "$archive" ]  && exec 0< <(kecs-inflate "$archive") # inflate
+[ -n "$extract" ]  && exec 0< <(kecs-extract "$extract") # extract
+[ -n "$progress" ] && exec 0< <(pv -l)                   # view progress
 
-# extract
-if [ -n "$extract" ]; then
-  csv=$(mktemp -u)
-  mkfifo "$csv"
-  rmexit "$csv"
-  kecs-extract "$extract" | tee "$csv" >/dev/null &
-  exec 0< "$csv"
-fi
-
-# view progress
-if [ -n "$progress" ]; then
-  view=$(mktemp -u)
-  mkfifo "$view"
-  rmexit "$view"
-  pv -l | tee "$view" >/dev/null &
-  exec 0< "$view"
-fi
-
-# split
 if [ -n "$size" ]; then
   kecs-split "$size" - ${prefix:-}
 else

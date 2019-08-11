@@ -8,9 +8,7 @@ size=$1
 # set input
 # replace stdin with file if given
 # - to denote stdin
-if [ $# -gt 1 ] && [ $2 != "-" ]; then
-  exec 0< "$2"
-fi
+[ $# -gt 1 ] && [ $2 != "-" ] && exec 0< "$2"
 
 # set output location
 if [ $# -gt 2 ]; then

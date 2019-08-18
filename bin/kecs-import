@@ -24,8 +24,9 @@ CREATE TEMPORARY TABLE IF NOT EXISTS raw (
   created  int(11)    unsigned NOT NULL,
   username char(20)            NOT NULL,
   score    int(11)             NOT NULL,
-  PRIMARY KEY (id)
-) DEFAULT CHARSET=utf8mb4;
+  PRIMARY KEY (id),
+  KEY (username) USING HASH
+) DEFAULT CHARSET=ascii;
 --
 LOAD DATA LOCAL INFILE '$file'
 INTO TABLE raw
@@ -44,23 +45,10 @@ SET
 INSERT IGNORE INTO users(username)
 SELECT DISTINCT username FROM raw;
 --
-CREATE TEMPORARY TABLE staging (
-  link     bigint(11) unsigned NOT NULL,
-  id       bigint(11) unsigned NOT NULL,
-  parent   bigint(11) unsigned NOT NULL,
-  created  int(11)    unsigned NOT NULL,
-  user     int(11)    unsigned NOT NULL,
-  score    int(11)             NOT NULL,
-  PRIMARY KEY (id)
-) AS (
-  SELECT r.id,r.link,r.parent,r.created,u.id AS user,r.score
-  FROM raw AS r
-  INNER JOIN $users AS u ON r.username = u.username
-);
---
 INSERT IGNORE INTO $tbl(id,link,parent,user,created,score)
-SELECT id,link,parent,user,created,score
-FROM staging;
+SELECT r.id,r.link,r.parent,u.id,r.created,r.score
+FROM raw AS r
+INNER JOIN $users AS u ON r.username = u.username;
 "
   # import
   attempt=1

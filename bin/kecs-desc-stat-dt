@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+
+db=kecs
+
+query () {
+  echo "\
+WITH RECURSIVE descs(id, parent, score)
+AS (
+  SELECT id, parent, score
+  FROM posts
+  WHERE
+    user IN (SELECT id FROM users WHERE username = '$1')
+    AND created BETWEEN $from AND $to
+  UNION ALL
+  SELECT p.id, p.parent, p.score
+  FROM posts AS p
+  INNER JOIN descs AS d ON d.parent = p.id
+  WHERE created < $to
+)
+SELECT '$1' AS username, COUNT(*) AS count, SUM(d.score) AS score
+FROM descs AS d;
+"
+}
+
+exec 3> >(mysql -N -B --raw "$db")
+
+while read -r user; do
+  query "$user"
+done >&3
+exec 3>&-

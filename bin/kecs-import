@@ -15,16 +15,16 @@ for file in "$@"; do
   # load stmt
   sql="\
 SET session sql_log_bin=0;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
 --
 CREATE TEMPORARY TABLE IF NOT EXISTS raw (
-  link bigint(11) unsigned NOT NULL,
-  id bigint(11) unsigned NOT NULL,
-  parent bigint(11) unsigned NOT NULL DEFAULT 0,
-  created int(11) unsigned NOT NULL,
-  username char(20) NOT NULL,
-  score int(11) NOT NULL,
-  PRIMARY KEY (id),
-  KEY (username) USING BTREE
+  link     bigint(11) unsigned NOT NULL,
+  id       bigint(11) unsigned NOT NULL,
+  parent   bigint(11) unsigned NOT NULL DEFAULT 0,
+  created  int(11)    unsigned NOT NULL,
+  username char(20)            NOT NULL,
+  score    int(11)             NOT NULL,
+  PRIMARY KEY (id)
 ) DEFAULT CHARSET=utf8mb4;
 --
 LOAD DATA LOCAL INFILE '$file'
@@ -41,17 +41,26 @@ SET
   username = @username,
   score = @score;
 --
-SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+INSERT IGNORE INTO users(username)
+SELECT DISTINCT username FROM raw;
 --
-INSERT INTO users(username)
-SELECT DISTINCT username FROM raw
-ON DUPLICATE KEY UPDATE id=users.id,username=users.username;
+CREATE TEMPORARY TABLE staging (
+  link     bigint(11) unsigned NOT NULL,
+  id       bigint(11) unsigned NOT NULL,
+  parent   bigint(11) unsigned NOT NULL,
+  created  int(11)    unsigned NOT NULL,
+  user     int(11)    unsigned NOT NULL,
+  score    int(11)             NOT NULL,
+  PRIMARY KEY (id)
+) AS (
+  SELECT r.id,r.link,r.parent,r.created,u.id AS user,r.score
+  FROM raw AS r
+  INNER JOIN $users AS u ON r.username = u.username
+);
 --
-INSERT INTO $tbl(id,link,parent,user,created,score)
-SELECT r.id,r.id,r.parent,u.id,r.created,r.score
-FROM raw AS r
-INNER JOIN $users AS u ON r.username = u.username
-ON DUPLICATE KEY UPDATE id=$tbl.id;
+INSERT IGNORE INTO $tbl(id,link,parent,user,created,score)
+SELECT id,link,parent,user,created,score
+FROM staging;
 "
   # import
   attempt=1
